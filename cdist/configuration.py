@@ -19,15 +19,15 @@
 #
 #
 
-
 import configparser
-import os
-import cdist
-import cdist.argparse
-import re
-import multiprocessing
 import logging
+import multiprocessing
+import os
+import re
 import sys
+
+import cdist
+import cdist.log
 
 
 class Singleton(type):
@@ -189,9 +189,7 @@ class VerbosityOption(SelectOption):
         super().__init__('verbosity', _VERBOSITY_VALUES)
 
     def translate(self, val):
-        name = 'VERBOSE_' + val
-        verbose = getattr(cdist.argparse, name)
-        return verbose
+        return getattr(cdist.log, "VERBOSE_" + val)
 
 
 class DelimitedValuesOption(OptionBase):

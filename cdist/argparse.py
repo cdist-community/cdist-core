@@ -1,14 +1,11 @@
 import argparse
-import cdist
 import multiprocessing
 import logging
-import collections
 import functools
+
+import cdist
 import cdist.configuration
 import cdist.log
-import cdist.preos
-import cdist.info
-import cdist.scan.commandline
 
 
 # set of beta sub-commands
@@ -20,33 +17,6 @@ BETA_ARGS = {
 EPILOG = "Get cdist at https://code.ungleich.ch/ungleich-public/cdist"
 # Parser others can reuse
 parser = None
-
-
-_verbosity_level_off = -2
-_verbosity_level = {
-    None: logging.WARNING,
-    _verbosity_level_off: logging.OFF,
-    -1: logging.ERROR,
-    0: logging.WARNING,
-    1: logging.INFO,
-    2: logging.VERBOSE,
-    3: logging.DEBUG,
-    4: logging.TRACE,
-}
-
-
-# Generate verbosity level constants:
-# VERBOSE_OFF, VERBOSE_ERROR, VERBOSE_WARNING, VERBOSE_INFO, VERBOSE_VERBOSE,
-# VERBOSE_DEBUG, VERBOSE_TRACE.
-this_globals = globals()
-for level in _verbosity_level:
-    const = 'VERBOSE_' + logging.getLevelName(_verbosity_level[level])
-    this_globals[const] = level
-
-
-# All verbosity levels above 4 are TRACE.
-_verbosity_level = collections.defaultdict(
-    lambda: logging.TRACE, _verbosity_level)
 
 
 def add_beta_command(cmd):
@@ -127,6 +97,7 @@ def get_parsers():
                   'value.'),
             action='count', default=None)
 
+    import cdist.configuration
     parser['colored_output'] = argparse.ArgumentParser(add_help=False)
     parser['colored_output'].add_argument(
             '--colors', metavar='WHEN',
@@ -151,6 +122,8 @@ def get_parsers():
             title="Commands", dest="command")
 
     # Banner
+    import cdist.banner
+
     parser['banner'] = parser['sub'].add_parser(
             'banner', parents=[parser['loglevel']])
     parser['banner'].set_defaults(func=cdist.banner.banner)
@@ -260,6 +233,8 @@ def get_parsers():
            action='store_false', dest='save_output_streams', default=True)
 
     # Config
+    import cdist.config
+
     parser['config_args'] = argparse.ArgumentParser(add_help=False)
     parser['config_args'].add_argument(
              '-A', '--all-tagged',
@@ -307,11 +282,15 @@ def get_parsers():
     parser['config'].set_defaults(func=cdist.config.Config.commandline)
 
     # Install
+    import cdist.install
+
     parser['install'] = parser['sub'].add_parser('install', add_help=False,
                                                  parents=[parser['config']])
     parser['install'].set_defaults(func=cdist.install.Install.commandline)
 
     # Inventory
+    import cdist.inventory
+
     parser['inventory'] = parser['sub'].add_parser('inventory')
     parser['invsub'] = parser['inventory'].add_subparsers(
             title="Inventory commands", dest="subcommand")
@@ -429,9 +408,13 @@ def get_parsers():
             func=cdist.inventory.Inventory.commandline)
 
     # PreOS
+    import cdist.preos
+
     parser['preos'] = parser['sub'].add_parser('preos', add_help=False)
 
     # Shell
+    import cdist.shell
+
     parser['shell'] = parser['sub'].add_parser(
             'shell', parents=[parser['loglevel'], parser['colored_output']])
     parser['shell'].add_argument(
@@ -441,6 +424,8 @@ def get_parsers():
     parser['shell'].set_defaults(func=cdist.shell.Shell.commandline)
 
     # Info
+    import cdist.info
+
     parser['info'] = parser['sub'].add_parser('info')
     parser['info'].add_argument(
             '-a', '--all', help='Display all info. This is the default.',
@@ -472,6 +457,8 @@ def get_parsers():
     parser['info'].set_defaults(func=cdist.info.Info.commandline)
 
     # Scan = config + further
+    import cdist.scan
+
     parser['scan'] = parser['sub'].add_parser('scan', add_help=False,
                                               parents=[parser['config']])
 
@@ -510,7 +497,7 @@ def get_parsers():
         '-t', '--trigger-delay',
         action='store',  default=5, type=int,
         help='How long (seconds) to wait between ICMPv6 echo requests')
-    parser['scan'].set_defaults(func=cdist.scan.commandline.commandline)
+    parser['scan'].set_defaults(func=cdist.scan.commandline)
 
     for p in parser:
         parser[p].epilog = EPILOG
@@ -520,9 +507,9 @@ def get_parsers():
 
 def handle_loglevel(args):
     if hasattr(args, 'quiet') and args.quiet:
-        args.verbose = _verbosity_level_off
+        args.verbose = cdist.log._verbosity_level_off
 
-    logging.getLogger().setLevel(_verbosity_level[args.verbose])
+    logging.getLogger().setLevel(cdist.log._verbosity_level[args.verbose])
 
 
 def handle_log_colors(args):
